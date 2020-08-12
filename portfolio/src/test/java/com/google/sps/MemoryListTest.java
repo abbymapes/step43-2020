@@ -1,3 +1,19 @@
+/*
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.google.sps.agents;
 
 import static org.junit.Assert.*;
@@ -7,9 +23,10 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.protobuf.*;
 import com.google.sps.data.Output;
 import com.google.sps.servlets.TestHelper;
-import com.google.sps.utils.MemoryUtils;
 import com.google.sps.utils.TimeUtils;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.junit.MockitoJUnitRunner;
@@ -47,6 +64,7 @@ public class MemoryListTest {
     Entity entity = databaseQuery.get(0);
     assertEquals("grocery", (String) entity.getProperty("listName"));
     assertNull(entity.getProperty("items"));
+    tester.tearDown();
   }
 
   /**
@@ -65,7 +83,7 @@ public class MemoryListTest {
             "memory.list - make");
 
     Output output = tester.getOutput();
-    assertEquals("Created! Anything else you would like to add?", output.getFulfillmentText());
+    assertEquals("Created!", output.getFulfillmentText());
 
     List<Entity> databaseQuery = tester.fetchDatastoreEntities("List");
     assertEquals(1, databaseQuery.size());
@@ -76,6 +94,7 @@ public class MemoryListTest {
     assertEquals("apples", items.get(0));
     assertEquals("bananas", items.get(1));
     assertEquals("ice cream", items.get(2));
+    tester.tearDown();
   }
 
   /**
@@ -116,6 +135,7 @@ public class MemoryListTest {
     for (int i = 0; i < queryItems.size(); i++) {
       assertEquals(items.get(i), queryItems.get(i));
     }
+    tester.tearDown();
   }
 
   /**
@@ -144,7 +164,7 @@ public class MemoryListTest {
         "shopping", otherListItems, TimeUtils.stringToDate("2020-02-11T09:00:00-00:00").getTime());
 
     Output output = tester.getOutput();
-    assertEquals("Created! Anything else you would like to add?", output.getFulfillmentText());
+    assertEquals("Created!", output.getFulfillmentText());
 
     List<Entity> databaseQuery = tester.fetchDatastoreEntities("List");
     assertEquals(3, databaseQuery.size());
@@ -169,6 +189,7 @@ public class MemoryListTest {
     for (int i = 0; i < queryItems.size(); i++) {
       assertEquals(otherListItems.get(i), queryItems.get(i));
     }
+    tester.tearDown();
   }
 
   /**
@@ -269,6 +290,7 @@ public class MemoryListTest {
     for (int i = 0; i < queryItems.size(); i++) {
       assertEquals(items.get(i), queryItems.get(i));
     }
+    tester.tearDown();
   }
 
   /** Tests the scenario where user tries to add elements to a list that is not in the datastore. */
@@ -309,223 +331,6 @@ public class MemoryListTest {
     for (int i = 0; i < queryItems.size(); i++) {
       assertEquals(items.get(i), queryItems.get(i));
     }
-  }
-
-  /**
-   * Tests list aggregation: 1) creates a new list for user 1, 2) updates the list for user 1, 3)
-   * creates a new list for user 1 of the same name, 4) updates that list, 5) creates a list for
-   * user 2, 6) creates a differently named list for user 2, 7) check for correct aggregate numbers
-   */
-  @Test
-  public void testListAggregation() throws Exception {
-
-    // 1) creates a new list for user 1
-
-    TestHelper tester =
-        new TestHelper(
-            "Start a grocery list with apples, bananas, and ice cream.",
-            "{\"list-name\":\"grocery\", "
-                + "\"list-objects\":\"apples, bananas, and ice cream\","
-                + "\"new-list\": \"\","
-                + "\"generic-list\": \"\"}",
-            "memory.list - make");
-
-    Output output = tester.getOutput();
-    assertEquals("Created! Anything else you would like to add?", output.getFulfillmentText());
-
-    List<Entity> databaseQuery = tester.fetchDatastoreEntities("List");
-    assertEquals(1, databaseQuery.size());
-
-    Entity entity = databaseQuery.get(0);
-    assertEquals("grocery", (String) entity.getProperty("listName"));
-    ArrayList<String> items = (ArrayList<String>) entity.getProperty("items");
-    assertEquals("apples", items.get(0));
-    assertEquals("bananas", items.get(1));
-    assertEquals("ice cream", items.get(2));
-
-    databaseQuery = tester.fetchDatastoreEntities("ListAggregate-groceri");
-    assertEquals(1, databaseQuery.size());
-    entity = databaseQuery.get(0);
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("apples")));
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("bananas")));
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("ice cream")));
-
-    // 2) updates list for user 1
-
-    tester.setParameters(
-        "Start a grocery list with pineapple and apple.",
-        "{\"list-name\":\"grocery\", "
-            + "\"list-objects\":\"pineapple and apple\","
-            + "\"new-list\": \"\","
-            + "\"generic-list\": \"\"}",
-        "memory.list - add");
-
-    output = tester.getOutput();
-    assertEquals("Updated!", output.getFulfillmentText());
-
-    databaseQuery = tester.fetchDatastoreEntities("List");
-    assertEquals(1, databaseQuery.size());
-
-    entity = databaseQuery.get(0);
-    assertEquals("grocery", (String) entity.getProperty("listName"));
-    items = (ArrayList<String>) entity.getProperty("items");
-    assertEquals("apples", items.get(0));
-    assertEquals("bananas", items.get(1));
-    assertEquals("ice cream", items.get(2));
-    assertEquals("pineapple", items.get(3));
-    assertEquals("apple", items.get(4));
-
-    databaseQuery = tester.fetchDatastoreEntities("ListAggregate-groceri");
-    assertEquals(1, databaseQuery.size());
-    entity = databaseQuery.get(0);
-    assertEquals(2, (long) entity.getProperty(MemoryUtils.stemmed("apples")));
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("bananas")));
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("ice cream")));
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("pineapple")));
-
-    // 3) creates a new list for user 1 of the same name
-
-    tester.setParameters(
-        "Start a grocery list with pineapple and apple.",
-        "{\"list-name\":\"grocery\", "
-            + "\"list-objects\":\"pineapple and apple\","
-            + "\"new-list\": \"\","
-            + "\"generic-list\": \"\"}",
-        "memory.list - make");
-
-    output = tester.getOutput();
-    assertEquals("Created! Anything else you would like to add?", output.getFulfillmentText());
-
-    databaseQuery = tester.fetchDatastoreEntities("List");
-    assertEquals(2, databaseQuery.size());
-
-    entity = databaseQuery.get(0);
-    assertEquals("grocery", (String) entity.getProperty("listName"));
-    items = (ArrayList<String>) entity.getProperty("items");
-    assertEquals("pineapple", items.get(0));
-    assertEquals("apple", items.get(1));
-
-    databaseQuery = tester.fetchDatastoreEntities("ListAggregate-groceri");
-    assertEquals(1, databaseQuery.size());
-    entity = databaseQuery.get(0);
-    assertEquals(3, (long) entity.getProperty(MemoryUtils.stemmed("apples")));
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("bananas")));
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("ice cream")));
-    assertEquals(2, (long) entity.getProperty(MemoryUtils.stemmed("pineapple")));
-
-    // 4) updates that list
-
-    tester.setParameters(
-        "Start a grocery list with chocolate and ice cream.",
-        "{\"list-name\":\"grocery\", "
-            + "\"list-objects\":\"chocolate and ice cream\","
-            + "\"new-list\": \"\","
-            + "\"generic-list\": \"\"}",
-        "memory.list - add");
-
-    output = tester.getOutput();
-    assertEquals("Updated!", output.getFulfillmentText());
-
-    databaseQuery = tester.fetchDatastoreEntities("List");
-    assertEquals(2, databaseQuery.size());
-
-    entity = databaseQuery.get(0);
-    assertEquals("grocery", (String) entity.getProperty("listName"));
-    items = (ArrayList<String>) entity.getProperty("items");
-    assertEquals("pineapple", items.get(0));
-    assertEquals("apple", items.get(1));
-    assertEquals("chocolate", items.get(2));
-    assertEquals("ice cream", items.get(3));
-
-    databaseQuery = tester.fetchDatastoreEntities("ListAggregate-groceri");
-    assertEquals(1, databaseQuery.size());
-    entity = databaseQuery.get(0);
-    assertEquals(3, (long) entity.getProperty(MemoryUtils.stemmed("apples")));
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("bananas")));
-    assertEquals(2, (long) entity.getProperty(MemoryUtils.stemmed("ice cream")));
-    assertEquals(2, (long) entity.getProperty(MemoryUtils.stemmed("pineapple")));
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("chocolate")));
-
-    // 5) creates a list for user 2
-
-    tester.setParameters(
-        "Start a Groceries list with chocolate and ice cream.",
-        "{\"list-name\":\"Groceries\", "
-            + "\"list-objects\":\"chocolate and ice cream\","
-            + "\"new-list\": \"\","
-            + "\"generic-list\": \"\"}",
-        "memory.list - make");
-    tester.setUser("test@example.com", "2");
-
-    output = tester.getOutput();
-    assertEquals("Created! Anything else you would like to add?", output.getFulfillmentText());
-
-    databaseQuery = tester.fetchDatastoreEntities("List", "2");
-    assertEquals(1, databaseQuery.size());
-
-    entity = databaseQuery.get(0);
-    assertEquals("Groceries", (String) entity.getProperty("listName"));
-    items = (ArrayList<String>) entity.getProperty("items");
-    assertEquals("chocolate", items.get(0));
-    assertEquals("ice cream", items.get(1));
-
-    databaseQuery = tester.fetchDatastoreEntities("ListAggregate-groceri", "2");
-    assertEquals(1, databaseQuery.size());
-    entity = databaseQuery.get(0);
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("ice cream")));
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("chocolate")));
-
-    // 5) creates a different list for user 2
-
-    tester.setParameters(
-        "Start a shopping list with books and chocolate.",
-        "{\"list-name\":\"shopping\", "
-            + "\"list-objects\":\"books and chocolate\","
-            + "\"new-list\": \"\","
-            + "\"generic-list\": \"\"}",
-        "memory.list - make");
-    tester.setUser("test@example.com", "2");
-
-    output = tester.getOutput();
-    assertEquals("Created! Anything else you would like to add?", output.getFulfillmentText());
-
-    databaseQuery = tester.fetchDatastoreEntities("List", "2");
-    assertEquals(2, databaseQuery.size());
-
-    entity = databaseQuery.get(0);
-    assertEquals("shopping", (String) entity.getProperty("listName"));
-    items = (ArrayList<String>) entity.getProperty("items");
-    assertEquals("books", items.get(0));
-    assertEquals("chocolate", items.get(1));
-
-    databaseQuery = tester.fetchDatastoreEntities("ListAggregate-groceri", "2");
-    assertEquals(1, databaseQuery.size());
-    entity = databaseQuery.get(0);
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("ice cream")));
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("chocolate")));
-
-    databaseQuery = tester.fetchDatastoreEntities("ListAggregate-shop", "2");
-    assertEquals(1, databaseQuery.size());
-    entity = databaseQuery.get(0);
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("books")));
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("chocolate")));
-
-    // 7) check for correct aggregate numbers
-
-    databaseQuery = tester.fetchDatastoreEntities("ListAggregate");
-    assertEquals(1, databaseQuery.size());
-    entity = databaseQuery.get(0);
-    assertEquals(3, (long) entity.getProperty(MemoryUtils.stemmed("apples")));
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("bananas")));
-    assertEquals(2, (long) entity.getProperty(MemoryUtils.stemmed("ice cream")));
-    assertEquals(2, (long) entity.getProperty(MemoryUtils.stemmed("pineapple")));
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("chocolate")));
-
-    databaseQuery = tester.fetchDatastoreEntities("ListAggregate", "2");
-    assertEquals(1, databaseQuery.size());
-    entity = databaseQuery.get(0);
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("books")));
-    assertEquals(2, (long) entity.getProperty(MemoryUtils.stemmed("chocolate")));
-    assertEquals(1, (long) entity.getProperty(MemoryUtils.stemmed("ice cream")));
+    tester.tearDown();
   }
 }

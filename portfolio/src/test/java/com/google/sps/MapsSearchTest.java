@@ -1,3 +1,19 @@
+/*
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.google.sps.servlets;
 
 import static org.junit.Assert.*;
@@ -5,7 +21,7 @@ import static org.mockito.Mockito.*;
 
 import com.google.sps.data.Output;
 import java.io.*;
-import java.util.*;
+import java.net.URISyntaxException;
 import javax.servlet.http.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,7 +35,7 @@ public class MapsSearchTest {
   private static Logger log = LoggerFactory.getLogger(MapsSearchTest.class);
 
   @Test
-  public void testMapsSearchCountry() throws IOException {
+  public void testMapsSearchCountry() throws IOException, URISyntaxException {
 
     TestHelper tester =
         new TestHelper(
@@ -47,7 +63,7 @@ public class MapsSearchTest {
   }
 
   @Test
-  public void testMapsSearchZipCode() throws IOException {
+  public void testMapsSearchZipCode() throws IOException, URISyntaxException {
 
     TestHelper tester =
         new TestHelper(
@@ -75,7 +91,7 @@ public class MapsSearchTest {
   }
 
   @Test
-  public void testMapsSearchIsland() throws IOException {
+  public void testMapsSearchIsland() throws IOException, URISyntaxException {
 
     TestHelper tester =
         new TestHelper(
@@ -106,7 +122,7 @@ public class MapsSearchTest {
   }
 
   @Test
-  public void testMapsSearchBusinessName() throws IOException {
+  public void testMapsSearchBusinessName() throws IOException, URISyntaxException {
 
     TestHelper tester =
         new TestHelper(
@@ -135,7 +151,7 @@ public class MapsSearchTest {
   }
 
   @Test
-  public void testMapsSearchCounty() throws IOException {
+  public void testMapsSearchCounty() throws IOException, URISyntaxException {
 
     TestHelper tester =
         new TestHelper(
@@ -163,7 +179,7 @@ public class MapsSearchTest {
   }
 
   @Test
-  public void testMapsSearchState() throws IOException {
+  public void testMapsSearchState() throws IOException, URISyntaxException {
 
     TestHelper tester =
         new TestHelper(
@@ -191,7 +207,7 @@ public class MapsSearchTest {
   }
 
   @Test
-  public void testMapsSearchStreetAddress() throws IOException {
+  public void testMapsSearchStreetAddress() throws IOException, URISyntaxException {
 
     TestHelper tester =
         new TestHelper(
@@ -221,7 +237,7 @@ public class MapsSearchTest {
   }
 
   @Test
-  public void testMapsSearchStreetAddress2() throws IOException {
+  public void testMapsSearchStreetAddress2() throws IOException, URISyntaxException {
 
     TestHelper tester =
         new TestHelper(
@@ -246,11 +262,12 @@ public class MapsSearchTest {
     // Assertions
     assertEquals(
         "Here is the map for: 500 W 2nd St, Austin, TX 78701, USA", output.getFulfillmentText());
-    assertEquals("{\"limit\":-1,\"lng\":-97.7495642,\"lat\":30.2660754}", output.getDisplay());
+    assertEquals(
+        "{\"limit\":-1,\"lng\":-97.74955949999999,\"lat\":30.2660766}", output.getDisplay());
   }
 
   @Test
-  public void testMapsSearchCity() throws IOException {
+  public void testMapsSearchCity() throws IOException, URISyntaxException {
 
     TestHelper tester =
         new TestHelper(
@@ -279,7 +296,7 @@ public class MapsSearchTest {
   }
 
   @Test
-  public void testMapsWithoutLocationMock() throws IOException {
+  public void testMapsWithoutLocationMock() throws IOException, URISyntaxException {
 
     TestHelper tester =
         new TestHelper(
@@ -307,7 +324,7 @@ public class MapsSearchTest {
         output.getFulfillmentText(), "I'm sorry, I didn't catch that. Can you repeat that?");
   }
 
-  public void testMapsWithoutLocation() throws IOException {
+  public void testMapsWithoutLocation() throws IOException, URISyntaxException {
 
     TestHelper tester = new TestHelper("Show me a map");
     Output output = tester.getOutput();

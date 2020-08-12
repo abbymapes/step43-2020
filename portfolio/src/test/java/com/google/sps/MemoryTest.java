@@ -1,3 +1,19 @@
+/*
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.google.sps.agents;
 
 import static org.junit.Assert.*;
@@ -8,8 +24,12 @@ import com.google.sps.data.Output;
 import com.google.sps.servlets.BookAgentServlet;
 import com.google.sps.servlets.TestHelper;
 import com.google.sps.utils.TimeUtils;
+import java.net.URISyntaxException;
 import java.text.ParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,7 +50,7 @@ public class MemoryTest {
    * retrieval for different keywords and time durations.
    */
   @Before
-  public void setUp() throws ParseException {
+  public void setUp() throws ParseException, URISyntaxException {
     // Pre-populate database with some comments.
     commentList =
         new ArrayList<>(
@@ -57,19 +77,19 @@ public class MemoryTest {
     ArrayList<String> addOns =
         new ArrayList<>(Arrays.asList("febDate1", "febDate2", "camel2", "febDate3"));
     commentList.addAll(addOns);
-    tester.setCustomDatabase(addOns, TimeUtils.stringToDate("2014-02-11T09:30:00-00:00").getTime());
+    tester.setCustomDatabase(addOns, TimeUtils.stringToDate("2014-02-11T09:30:00-08:00").getTime());
 
     addOns = new ArrayList<>(Arrays.asList("febDate4", "febDate5", "febDate6"));
     commentList.addAll(addOns);
-    tester.setCustomDatabase(addOns, TimeUtils.stringToDate("2014-02-11T09:34:00-00:00").getTime());
+    tester.setCustomDatabase(addOns, TimeUtils.stringToDate("2014-02-11T09:34:00-08:00").getTime());
 
     addOns = new ArrayList<>(Arrays.asList("febDate7", "febDate8", "febDate9"));
     commentList.addAll(addOns);
-    tester.setCustomDatabase(addOns, TimeUtils.stringToDate("2014-02-11T09:36:00-00:00").getTime());
+    tester.setCustomDatabase(addOns, TimeUtils.stringToDate("2014-02-11T09:36:00-08:00").getTime());
 
     addOns = new ArrayList<>(Arrays.asList("febDate7", "febDate8", "camel3", "febDate9"));
     commentList.addAll(addOns);
-    tester.setCustomDatabase(addOns, TimeUtils.stringToDate("2014-02-12T12:00:00-00:00").getTime());
+    tester.setCustomDatabase(addOns, TimeUtils.stringToDate("2014-02-12T12:00:00-08:00").getTime());
   }
 
   /** Checks that no display output or database query is made if the user is not logged in. */
@@ -83,7 +103,7 @@ public class MemoryTest {
 
     Output output = tester.getOutput();
 
-    assertEquals("Please login to access conversation history.", output.getFulfillmentText());
+    assertEquals("Please login to access user history.", output.getFulfillmentText());
     assertNull(output.getDisplay());
 
     tester.setLoggedIn();

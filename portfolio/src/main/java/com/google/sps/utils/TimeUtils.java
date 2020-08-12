@@ -1,11 +1,34 @@
+/*
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.google.sps.utils;
 
+import com.google.protobuf.Value;
+import com.google.sps.data.Pair;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TimeUtils {
+
+  private static Logger log = LoggerFactory.getLogger(TimeUtils.class);
 
   /**
    * Converts a string representation ("yyyy-MM-dd'T'HH:mm:ssXXX") of date into a Date object.
@@ -14,7 +37,6 @@ public class TimeUtils {
    * @param return Date object equivalent to the date represented in the string input.
    */
   public static Date stringToDate(String dateString) throws ParseException {
-    dateString = dateString.replaceAll("[0-9]{2}:[0-9]{2}$", "00:00");
     SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.ENGLISH);
     Date parsed = parser.parse(dateString);
     return parsed;
@@ -100,5 +122,38 @@ public class TimeUtils {
     } else {
       return "0" + String.valueOf(num);
     }
+  }
+
+  /**
+   * Unpacks date object from "date-time-enhanced" entity to retrieve a start and end pair that
+   * represents the length of time that the user specified.
+   *
+   * @param dateObject Value from dialogflow's retrieved parameters
+   * @return Pair where key represents start time of duration and value represents end time
+   */
+  public static Pair<Long, Long> getTimeRange(Value dateObject) throws ParseException {
+    String startDateString;
+    String endDateString;
+    Value dateTimeObject = dateObject.getStructValue().getFieldsMap().get("date-time");
+    if (dateTimeObject.hasStructValue()) {
+      Map<String, Value> durationMap = dateTimeObject.getStructValue().getFieldsMap();
+      if (durationMap.get("date-time") != null) {
+        // Case where user specifies a specific date and time (should return a 10 min period
+        // centered around the time)
+        Date dateTime = stringToDate(durationMap.get("date-time").getStringValue());
+        return new Pair(dateTime.getTime() - 300000, dateTime.getTime() + 300000);
+      }
+      // Case where user specifies a time duration.
+      startDateString = durationMap.get("startDate").getStringValue();
+      endDateString = durationMap.get("endDate").getStringValue();
+    } else {
+      // Case where user asks for a date but no time (should return a full day period)
+      String dateString = dateTimeObject.getStringValue();
+      startDateString = dateString.replaceAll("T([0-9]{2}:){2}[0-9]{2}", "T00:00:00");
+      endDateString = dateString.replaceAll("T([0-9]{2}:){2}[0-9]{2}", "T23:59:59");
+    }
+    Date start = stringToDate(startDateString);
+    Date end = stringToDate(endDateString);
+    return new Pair(start.getTime(), end.getTime());
   }
 }

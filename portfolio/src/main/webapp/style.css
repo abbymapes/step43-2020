@@ -1,21 +1,97 @@
 body {
-    background: rgb(42, 42, 42);
-    background: linear-gradient(90deg, rgba(42,42,42,1) 0%, 
-                                        rgba(85,85,85,1) 50%, 
-                                        rgba(42,42,42,1) 100%);
-    font-weight: 300;
+    background:white;
     height: 100vh;
     margin: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
-    font-family:'Open Sans', sans-serif;
+    font-family: 'Roboto', sans-serif;
 }
+
+/* CSS talk bubble */
+.talk-bubble-user {
+  margin: 20px;
+  position: relative;
+  height: auto;
+  background-color: rgb(0, 145, 255);
+  max-width: calc(60% - 20px);
+  display: inline-block;
+  float: right;
+}
+
+.talk-bubble-user:after {
+    content: '';
+    bottom: -5px;
+    right: -36px;
+    position: absolute;
+    width: 38px;
+    height: 26px;
+    background-color: transparent;
+    border-bottom-left-radius: 50%;
+    border-bottom-right-radius: 50%;
+    box-shadow: -20px 10px 0px -7px rgb(0, 145, 230);
+    transform: rotate(30deg);
+}
+
+.talk-bubble-user:before {
+    content: '';
+    bottom: -15px;
+    right: -35px;
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    background-image: url(images/android.png);
+    background-repeat: no-repeat;
+    background-size: contain;
+    border-radius: 50%;
+}
+
+.talk-bubble-assistant {
+    margin: 20px;
+    position: relative;
+    height: auto;
+    background-color: lightgrey;
+    max-width: calc(60% - 20px);
+    display: inline-block;
+    float: left;
+}
+
+.talk-bubble-assistant:after {
+    content: '';
+    bottom: -7px;
+    left: -35px;
+    position: absolute;
+    width: 38px;
+    height: 26px;
+    background-color: transparent;
+    border-bottom-left-radius: 50%;
+    border-bottom-right-radius: 50%;
+    box-shadow: -20px 10px 0px -7px lightgrey;
+    -webkit-transform: rotateY(180deg) rotate(30deg);
+}
+
+.talk-bubble-assistant:before {
+    content: '';
+    bottom: -20px;
+    left: -45px;
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background-image: url(images/icon.png);
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
+.round {
+    border-radius: 20px;
+    padding: 2px;
+}
+
+/* Workout Agent Styling start */
 
 #videos {
     width: 100%;
-    height: 1250px;
     background-color: white;
 }
 
@@ -55,9 +131,10 @@ body {
    color: #333333;
    padding: 15px;
    text-align: left;
+   width: 800px;
 }
 
-.video-buttons {
+.workout-buttons {
     background-color: white;
     color: #333333;
     border: 1px solid #e7e7e7;
@@ -70,7 +147,7 @@ body {
     cursor: pointer;
 }
 
-.video-buttons:hover {
+.workout-buttons:hover {
     background-color: #e7e7e7;
 }
 
@@ -86,6 +163,9 @@ body {
     float: left;
 }
 
+.workout-plan-footer-buttons {
+    padding: 1%;
+}
 
 .video-info a {
     text-decoration: none;
@@ -97,26 +177,297 @@ body {
     padding-top: 20px;
 }
 
+#workout-planner {
+    width: 100%;
+    height: 100%
+}
+
+.planner-table {
+    padding: 20px;
+}
+
+.table-video-title {
+    color: #333333;
+}
+
+table {
+  border-collapse: collapse;
+  border-radius:6px;
+  -moz-border-radius:6px;
+}
+
+table, th, td {
+  border: 1px solid #e7e7e7;
+}
+
+th {
+    background-color: #e7e7e7;
+}
+
+td {
+    font-size: 15px;
+    padding: 10px;
+}
+
+.workout-dashboard-link {
+  position: absolute;
+  top: 60px;
+  right: 5px;
+  border-radius: 10px;
+  background-color: rgba(146, 142, 142, 0.156);
+  padding: 10px;
+  margin: 15px;
+  color: gray;
+  text-decoration: none;
+}
+
+.workout-dashboard-link:hover {
+  cursor: pointer;
+  background-color: rgba(133, 132, 132, 0.356);
+}
+
+.workout-dashboard-link a:visited {
+  color: gray;
+}
+
+.user-info-content {
+    margin-bottom: 10%;
+    margin-left: 15%;
+    margin-right: 5%;
+    margin-top: 2.5%;
+}
+
+.user-info {
+    top: 0;
+    margin-bottom: 3%;
+    margin-right: 65%;
+    display: inline-flex;
+}
+
+.user-pic {
+	vertical-align: top;
+	margin: 20px 30px 0 0;
+	border-radius: 50%;
+	height: 150px;
+	width: 150px;
+}
+
+.user-contact {
+	width: 45%;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.dashboard-user-name {
+    text-align: left;
+}
+
+.dashboard-user-email {
+    text-align: left;
+}
+
+/* .dashboard-content {
+    display: inline-block;
+} */
+
+.activity-tracker {
+    width: 40%;
+}
+
+.activity-tracker-header {
+    text-align: left;
+    margin: 1%;
+    margin-left: 0.5%;
+}
+
+.activity-tracker-button {
+    padding: 2%;
+}
+
+
+.saved-workout-content {
+    text-align: left;
+    width: 100%;
+    margin-bottom: 12%;
+    display: flex;
+    flex-direction: column;
+}
+
+.saved-workout-plans {
+    order: 1;
+}
+
+.saved-workout-videos {
+    order: 2;
+}
+
+.saved-workout-plans-header {
+    text-align: left;
+    margin: 1%;
+    margin-left: 0.5%;
+}
+
+.workout-plan-card-div {
+    display: inline-block;
+    margin: 0.5%;
+    margin-left: 1%;
+}
+
+
+.workout-plan-card {
+    height: 120px;
+    width: 200px;
+    background-color: #fffaf3;
+    margin: 0% 5% 5% 0%;
+    padding: 7%;
+    text-align: center;
+    border: 2px solid #ff9167;
+    border-radius: 5px;
+}
+    
+.workout-plan-card a {
+    font-size: 17px;
+    font-weight: bold;
+    color: #333333
+}
+
+.workout-plan-card a:visited {
+    color: #333333
+}
+
+.workout-plan-card p {
+    font-size: 14px;
+    margin-top: 25px;
+}
+
+.progress-bar-light-gray {
+    color:#000!important;
+    background-color:#f1f1f1!important;
+    width: 100%;
+}
+
+.progress-bar-orange {
+    color:#000!important;
+    background-color:#ff9167!important
+}
+
+.progress-bar-round {
+    border-radius: 4px
+}
+
+.workout-plan-card-progress {
+    text-align: left;
+    margin-top: 5px;
+    margin-left: 15px;
+}
+
+.saved-workout-videos-header {
+    text-align: left;
+    margin: 1%;
+    margin-left: 0.5%;
+    padding-top: 2%;
+}
+
+.saved-video {
+    display: inline-block;
+    border: 1px solid #e7e7e7;
+    border-radius: 5px;
+    padding: 1%;
+    margin: 0.5%;
+}
+
+.saved-video-title {
+    color: #333333;
+    margin-bottom: 0%;
+    margin-top: 2%;
+    text-align: left;
+    font-size: 17px;
+}
+
+.saved-video-channel-title {
+    text-align: left;
+    margin-left: 0%;
+    margin-bottom: 0%;
+}
+
+.mark-completed-button {
+    margin: 5%;
+}
+
+.button-color-change {
+    color:#3f8865;
+    border: 1px solid #8bc7aa;
+}
+
+#progress {
+    font-weight: 200;
+}
+
+
+.workout-plan-progress {
+    margin-top: 1.5%;
+    margin-left: auto;
+    margin-right: auto;
+    width: 48%;
+}
+
+.workout-plan-table {
+    width: 50%;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 3%;
+    margin-bottom: 3%;
+}
+
+.dashboard-link {
+    text-align: right;
+    margin-right: 35%;
+}
+
+.back-to-dashboard-link {
+  position: absolute;
+  border-radius: 10px;
+  background-color: rgba(146, 142, 142, 0.156);
+  padding: 10px;
+  margin: 15px;
+  color: #615f5f;
+  text-decoration: none;
+}
+
+.back-to-dashboard-link:hover {
+  cursor: pointer;
+  background-color: rgba(133, 132, 132, 0.356);
+}
+
+/* Workout Agent Styling End */
+
 h1 {
     font-weight: 200;
     font-style: 26px;
     margin: 10px;
-    color: white;
+    color: #333333;
 }
 
 p {
-    color: white;
-    margin: 5px;
+    color: #333333;
+    margin: 10px;
+    z-index: 99 !important;
+    position: relative;
+}
+
+a {
+    text-decoration: none;
 }
 
 #map {
-    width: 100%;
+    width: calc(100% - 85px);
     height: 300px;
 }
 
 #header {
-  position:absolute; 
-  top:0px; 
+  position: absolute; 
+top: 0px; 
   height: fit-content;
   overflow:hidden; 
   width: 90%; 
@@ -125,7 +476,7 @@ p {
  
 #footer {
   position:absolute; 
-  bottom:0px; 
+  bottom: 30px; 
   height: fit-content; 
   overflow:hidden; 
   width: 90%; 
@@ -141,57 +492,82 @@ p {
 }
  
 #content {
-  position:absolute; 
-  top: 150px; 
-  bottom: 150px; 
-  overflow: auto;
-  width: 90%;
-  max-width: 850px;
+    position: absolute;
+    top: 170px;
+    bottom: 175px;
+    overflow: auto;
+    width: 90%;
+    max-width: 950px;
+    padding: 40px;
 }
  
 [class*="user-side"] {
-  text-align: right;
-  margin-left: 25%;
+  text-align: left;
+  margin-left: 40%;
 }
  
 [class*="assistant-side"] {
   text-align: left;
-  margin-right: 25%;
+  margin-right: 40%;
 }
  
 .media-display {
-  margin-left:auto; 
-  margin-right:auto;
+  margin-left: 20px;
+  margin-right: 15px;
   text-align: center;
 }
 
 .timer-display {
   background-color: rgba(255, 255, 255, 0.616);
   color: rgb(58, 56, 56);
-  font-family: 'Open Sans', sans-serif;
+  font-family: 'Roboto', sans-serif;
   font-size: 2.5rem;
 }
  
-textarea {
-  font-family:'Open Sans', sans-serif;
-  text-align: center;
-  width: 80%;
-  max-width: 650px;
-  height: 30px;
-}
- 
 button {
-  font-family:'Open Sans', sans-serif;
+  font-family: 'Roboto', sans-serif;
 }
  
 input {
-  font-family:'Open Sans', sans-serif;
+  font-family: 'Roboto', sans-serif;
+  height: 35px;
+  font-size: 16px;
+  color: #444343;
+  background-color: #eeeded;
+  border: none;
+  border-radius: 3px;
 } 
+
+input:hover {
+  cursor: pointer;
+  background-color: rgba(133, 132, 132, 0.356);
+}
  
 * {
-  margin: 0;
-  padding: 0;
   box-sizing: border-box;
+}
+
+form {
+	display: flex;
+    justify-content: center;
+}
+
+textarea {
+  font-family: 'Roboto', sans-serif;
+  font-size: 16px;
+  padding: 5px 5px 5px 8px;
+  text-align: left;
+  width: 90%;
+  max-width: 500px;
+  height: 35px;
+  display: inline-block;
+  
+  resize: none;
+}
+
+#submit {
+  display: inline-block;
+  width: 10%;
 }
  
 html, body {
@@ -206,7 +582,7 @@ h1, h2 {
   font-size: 2rem;
   text-align: center;
   font-weight: normal;
-  padding: 0.5rem 0 0 0;
+  padding: 5% 0 0 0;
 }
  
 .main-controls {
@@ -228,42 +604,46 @@ canvas {
 #buttons button {
   font-size: 1rem;
   padding: 1rem;
-  min-width: 50px;
-  min-height: 50px;
+  margin: 5px;
+  width: 60px;
+  height: 60px;
   background: rgba(255, 255, 255, 0);
   text-align: center;
   color: white;
-  border: none;
   transition: all 0.2s;
+  border-radius: 30px;
+  -moz-border-radius: 30px;
+  background-color: white;
+  border: 1px solid #cccccc;
 }
+
+#buttons button:hover {
+  cursor: pointer;
+  background-color: rgba(133, 132, 132, 0.356);
+}
+
  
-.record {
-   border-radius: 50%;
+.microphone {
+    height: 33px;
+    padding-bottom: 3px;
 }
- 
-.microphone{
-  max-height: 35px;
-}
- 
-button:hover, button:focus {
-  box-shadow: inset 0px 0px 10px rgba(255, 255, 255, 1);
-  background: rgb(158, 158, 158);
-}
+
  
 .box {
-  width: 25px;
-  height: 25px;
-  background-color: #DB4437;
+    width: 25px;
+    height: 25px;
+    background-color: #d95240;
+    border-radius: 5px;
 }
- 
-.box:hover, .box:focus {
-  box-shadow: inset 0px 0px 10px rgba(255, 255, 255, 1);
-  background: #DB4437;
+
+.input-form {
+    padding: 2.5%;
 }
- 
-button:active {
-  box-shadow: inset 0px 0px 20px rgba(0,0,0,0.5);
-  transform: translateY(2px);
+
+.text-input {
+  border-color: #cccccc;
+  border-radius: 8px;
+  margin-right: 1.5%;
 }
  
 section, article {
@@ -323,21 +703,20 @@ input[type=checkbox]:checked ~ aside {
   top: 5px;
   right: 5px;
   border-radius: 10px;
-  background-color:  rgba(255, 255, 255, 0.156);
+  background-color: rgba(146, 142, 142, 0.156);
   padding: 10px;
-  padding-top: 5px;
-  margin: 10px;
+  margin: 15px;
 }
 
 .auth-link:hover {
   cursor: pointer;
-  background-color: rgba(255, 255, 255, 0.356);
+  background-color: rgba(133, 132, 132, 0.356);
 }
 
 a.link {
-  font-family: 'Open Sans', sans-serif;
+  font-family: 'Roboto', sans-serif;
   text-decoration: none;
-  color: white;
+  color: gray;
   font-size: 1.3rem;
 }
  
@@ -353,10 +732,10 @@ a.link {
 }
 
 #right-panel {
-    font-family: 'Open Sans', sans-serif;
+    font-family: 'Roboto', sans-serif;
     position: absolute;
     color: black;
-    right: 0px;
+    right: 55px;
     margin-top: -300px;
     height: 300px;
     width: 200px;
@@ -391,20 +770,27 @@ ul {
     height: 210px;
     width: 190px;
     overflow-y: scroll;
-    border: 2px solid #bcbbbb;
+    border-right: 2px solid #bcbbbb;
 }
 
 li {
     background-color: #fcfcfc;
     padding: 10px;
-    text-overflow: ellipsis;
     white-space: nowrap;
-    overflow: hidden;
     border: 2px solid white;
+}
+
+.clickable {
+    text-overflow: ellipsis;
+    overflow: hidden;
 }
 
 .patterned:nth-child(odd) {
     background-color: #f1f1f1;
+}
+
+.plain {
+    background-color: white;
 }
 
 .active {
@@ -417,6 +803,8 @@ li {
     color: black;
     border-radius: 10px;
     border: 1px solid #919090;
+    height: 45px;
+    font-size: large;
 }
 
 #more:disabled {
@@ -428,14 +816,19 @@ li {
 
 .memory {
     background-color: white;
-    height: 400px;
+    border: 2px solid #bcbbbb;
+    height: 350px;
+    margin-left: 20px;
+    margin-right: 15px;
+    display: inline-block;
+    width: calc(100% - 50px);
 }
 
 .conversation-div {
     background-color: white;
-    height: 400px;
+    height: 340px;
     overflow-y: auto;
-    padding: 20px;
+    padding: 30px;
     padding-top: 0px;
     padding-bottom: 20px;
 }
@@ -447,17 +840,26 @@ li {
     margin-bottom: 10px;
 }
 
-.keyword-screen, .conversation-screen {
+.time-centered {
+    text-align: center;
+    color: gray;
+    font-size: 10px;
+    margin-top: 20px;
+}
+
+.left-panel, .content-panel {
     display: inline-block;
     width: 50%;
     height: 100%;
     vertical-align:top
 }
 
-.conversation-screen {
-    padding: 10px;
+.content-panel {
+    padding: 30px;
     padding-top: 0px;
     overflow-y: auto;
+    text-align: left;
+    position: relative;
 }
 
 .comment-text {
@@ -468,6 +870,7 @@ li {
     overflow: hidden;
 }
 
+/* Start book style here */
 .book-table {
   background-color: rgba(255, 255, 255, 50%);
   color: rgb(58, 56, 56);
@@ -483,28 +886,70 @@ li {
   color: rgb(58, 56, 56);
 }
 
-td.book-thumbnail {
+/* All book td */
+td.book {
+  border: 0px;
   width: 10px;
-  padding: 5px;
+  padding: 10px;
+}
+
+td.book-thumbnail {
+  border: 0px;
+  width: 1%;
+  padding: 10px;
 }
 
 td.book-about {
+  border: 0px;
   padding: 10px;
   width:1%;
   white-space:nowrap;
 }
 
 td.book-info {
+  border: 0px;
   padding: 10px;
   text-align: left;
 }
 
 td.book-links {
+  border: 0px;
   padding: 10px;
   width:1%;
   white-space:nowrap;
   text-align: left;
 }
+
+td.prev-column {
+  border: 0px;
+  text-align: left;
+  padding-left: 10px;
+}
+
+td.more-column {
+  border: 0px;
+  text-align: right;
+  padding-right: 10px;
+}
+
+td.page-count {
+  border: 0px;
+  text-align: center;
+  padding: 5px;
+}
+
+td.bookshelf-name {
+  border: 0px;
+  width: 10px;
+  padding: 5px;
+}
+
+td.book-friend-header {
+  font-size: 18px;
+  border: none;
+}
+
+/* All book images */
 
 img.thumbnail {
   max-height: 100px;
@@ -514,11 +959,24 @@ img.redirect-logo {
   width: 10px;
 }
 
-p.book {
-  color: hsl(0, 2%, 22%);
-  font-size: 14px;
+img.book-dropbtn-logo {
+  width: 10px;
 }
 
+img.book-friend-avatar {
+  width: 30px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+img.book-header-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+/* All book buttons */
 [class*="book-button"] {
   color: hsl(0, 2%, 30%);
   border-color: hsl(0, 2%, 70%);
@@ -527,18 +985,46 @@ p.book {
   border-radius: 8px;
   padding: 3px;
   font-size: 12px;
+  margin: 1px;
+  white-space: nowrap;
+  background: white;
 }
 
 [class*="book-button"]:hover, [class*="book-button"]:focus {
   background: none;
-  color: hsl(0, 2%, 22%);
+  color: #4c8bf5;
   border-color: #4c8bf5;
   box-shadow: inset 0px 0px 10px rgba(255, 255, 255, 1);
+}
+
+button.bookshelf-button {
+  background-color: white;
+  color: hsl(0, 2%, 30%);
+  border-color: hsla(0, 2%, 70%, 0);
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 8px;
+  padding: 3px;
+  font-size: 18px;
+}
+
+button.bookshelf-button:hover,button.bookshelf-button:focus {
+  background: none;
+  color: #4c8bf5;
+  border-color: #4c8af500;
+  box-shadow: inset 0px 0px 10px rgba(255, 255, 255, 1);
+}
+
+/* Book paragraph and links */
+p.book {
+  color: hsl(0, 2%, 22%);
+  font-size: 14px;
 }
 
 a.book-link {
   background: none;
   color: hsl(0, 2%, 22%);
+  text-decoration: none;
 }
 
 a.book-link:hover,a.book-link:focus {
@@ -546,19 +1032,26 @@ a.book-link:hover,a.book-link:focus {
   color: #4c8bf5;
 }
 
-td.prev-column {
-  text-align: left;
-  padding-left: 10px;
+a.add-link {
+  background: none;
+  color: hsl(0, 2%, 22%);
+  text-decoration: none;
 }
 
-td.more-column {
-  text-align: right;
-  padding-right: 10px;
+a.add-link:hover,a.add-link:focus {
+  background: none;
+  color: #1aa260;
 }
 
-td.page-count {
-  text-align: center;
-  padding: 5px;
+a.delete-link {
+  background: none;
+  color: hsl(0, 2%, 22%);
+  text-decoration: none;
+}
+
+a.delete-link:hover,a.delete-link:focus {
+  background: none;
+  color: #de5246;
 }
 
 p.description {
@@ -572,11 +1065,91 @@ p.description {
   width: 600px;
   height: 400px;
   text-align: center;
+  margin: auto;
 }
 
-.time-centered {
-    text-align: center;
-    color: gray;
-    font-size: 10px;
-    margin-top: 20px;
+/* The container <div> - needed to position the dropdown content */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+/* Dropdown Content (Hidden by Default) */
+.book-dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f1f1f1;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+  z-index: 100;
+  white-space: nowrap;
+  overflow: auto;
+  max-height: 120px;
+  padding-right: 10px;
+}
+
+/* Links inside the dropdown */
+.book-dropdown-content a {
+  color: black;
+  padding: 10px 10px;
+  text-decoration: none;
+  display: block;
+}
+
+/* Show the dropdown menu (use JS to add this class to the .dropdown-content container when the user clicks on the dropdown button) */
+.show {
+  display:block;
+  overflow: auto;
+  max-height: 120px;}
+
+[class*="book-like-count"] {
+  background: none;
+  font-size: 14px;
+  font-style: bold;
+  color: hsl(0, 2%, 22%);
+  text-decoration: none;
+}
+
+[class*="book-like-count"]:hover, [class*="book-like-count"]:focus {
+  background: none;
+  color: #4c8bf5;
+}
+
+.download {
+  width: 30px;
+  height: 30px;
+  position: absolute;
+  top: 10px; 
+  right: 10px;
+}
+
+.download-image {
+  width: 30px;
+  height: 30px;
+  opacity: 20%;
+}
+
+.download-image:hover {
+  opacity: 40%;
+}
+
+.list-container {
+    display: block;
+    max-height: 350px;
+    width: calc(100% - 50px);
+    margin: 20px;
+}
+
+.list-content {
+    display: inline-block;
+    width: auto;
+    text-align: left;
+    position: relative;
+    padding: 50px;
+    padding-top: 0px;
+    padding-right: 75px;
+    border: 2px solid lightgrey;
+    float: left;
+    overflow-y: auto;
+    max-height: 350px;
 }

@@ -1,17 +1,37 @@
+/*
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+ 
 package com.google.sps.agents;
 
 // Imports the Google Cloud client library
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.users.UserService;
 import com.google.gson.Gson;
 import com.google.maps.errors.ApiException;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
+import com.google.sps.data.WorkoutPlan;
 import com.google.sps.data.YouTubeVideo;
 import com.google.sps.utils.TimeUtils;
 import com.google.sps.utils.VideoUtils;
+import com.google.sps.utils.WorkoutProfileUtils;
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,30 +48,83 @@ public class WorkoutAgent implements Agent {
   private String output = null;
   private String display = null;
   private String redirect = null;
+  private DatastoreService datastore;
+  private UserService userService;
   private String workoutType = "";
   private String workoutLength = "";
   private String youtubeChannel = "";
   private int planLength;
+  private String userSaved = "";
   private String amount = "";
   private String unit = "";
+  private VideoUtils videoUtils;
+  private WorkoutProfileUtils workoutProfileUtils;
   private static final int videosDisplayedTotal = 25;
   private static final int videosDisplayedPerPage = 5;
+  private static final int maxPlaylistResults = 5;
 
-  public WorkoutAgent(String intentName, Map<String, Value> parameters)
+  /**
+   * Workout agent constructor that uses intent and parameters to determnine fulfillment and display
+   * for user request
+   *
+   * @param intentName String containing the specific workout agent intent requeste by user
+   * @param parameters Map containing the detected entities in the user's intent
+   * @param userService UserService instance to access userId and other user info
+   * @param datastore DatastoreService instance used to access saved workout plans from the user's
+   *     database
+   */
+  public WorkoutAgent(
+      String intentName,
+      Map<String, Value> parameters,
+      UserService userService,
+      DatastoreService datastore)
       throws IllegalStateException, IOException, ApiException, InterruptedException,
           ArrayIndexOutOfBoundsException {
     this.intentName = intentName;
+    this.datastore = datastore;
+    this.userService = userService;
+    videoUtils = new VideoUtils();
+    workoutProfileUtils = new WorkoutProfileUtils();
     setParameters(parameters);
   }
 
-  @Override
+  /**
+   * Workout agent constructor used for testing purposes that uses intent and parameters to
+   * determnine fulfillment and display for user request
+   *
+   * @param intentName String containing the specific workout agent intent requeste by user
+   * @param parameters Map containing the detected entities in the user's intent
+   * @param userService UserService instance to access userId and other user info
+   * @param datastore DatastoreService instance used to access saved workout plans from the user's
+   *     database
+   * @param videoUtils VideoUtils instance to access methods to get videos and playlists
+   * @param workoutProfileUtils WorkoutProfileUtils instance to access methods for storing and
+   *     saving videos/plans
+   */
+  public WorkoutAgent(
+      String intentName,
+      Map<String, Value> parameters,
+      UserService userService,
+      DatastoreService datastore,
+      VideoUtils videoUtils,
+      WorkoutProfileUtils workoutProfileUtils)
+      throws IllegalStateException, IOException, ApiException, InterruptedException,
+          ArrayIndexOutOfBoundsException {
+    this.intentName = intentName;
+    this.datastore = datastore;
+    this.userService = userService;
+    this.videoUtils = videoUtils;
+    this.workoutProfileUtils = workoutProfileUtils;
+    setParameters(parameters);
+  }
+
   public void setParameters(Map<String, Value> parameters)
       throws IllegalStateException, IOException, ApiException, InterruptedException,
           ArrayIndexOutOfBoundsException {
     if (intentName.contains("find")) {
       workoutFind(parameters);
     } else if (intentName.contains("plan")) {
-      workoutPlan(parameters);
+      workoutPlanner(parameters);
     }
   }
 
@@ -79,8 +152,6 @@ public class WorkoutAgent implements Agent {
    * @param parameters parameter Map from Dialogflow
    */
   private void workoutFind(Map<String, Value> parameters) throws IOException {
-    log.info(String.valueOf(parameters));
-
     if (parameters.get("duration").hasStructValue()) {
       Struct durationStruct = parameters.get("duration").getStructValue();
       Map<String, Value> durationMap = durationStruct.getFieldsMap();
@@ -123,33 +194,42 @@ public class WorkoutAgent implements Agent {
    * Data API call from VideoUtils to get passed into workout.js
    */
   private void setWorkoutFindDisplay() throws IOException {
-
     // Removing white space so search URL does not have spaces
     workoutLength = workoutLength.replaceAll("\\s", "");
     workoutType = workoutType.replaceAll("\\s", "");
     youtubeChannel = youtubeChannel.replaceAll("\\s", "");
 
-    // Make API call to WorkoutUtils to get json object of videos
-    List<YouTubeVideo> videoList =
-        VideoUtils.getVideoList(
-            workoutLength, workoutType, youtubeChannel, videosDisplayedTotal, "video");
+    // Make API call to WorkoutUtils to get ArrayList of YouTubeVideos
+    ArrayList<YouTubeVideo> videoList =
+        videoUtils.getVideoList(
+            userService, workoutLength, workoutType, youtubeChannel, videosDisplayedTotal, "video");
+
+    if (userService.isUserLoggedIn()) {
+      for (YouTubeVideo video : videoList) {
+        workoutProfileUtils.storeWorkoutVideo(datastore, video);
+      }
+    }
 
     display = new Gson().toJson(videoList);
   }
 
   /**
-   * Private workoutPLan method, makes and displays a workout specified by user request. Method sets
-   * parameters for planLength and workoutType based on Dialogflow detection and makes calls to set
-   * display and set output. parameters map needs to include duration struct to set int planLength
-   * and String workoutType
+   * Private workoutPlanner method, makes and displays a workout specified by user request. Method
+   * sets parameters for planLength and workoutType based on Dialogflow detection and makes calls to
+   * set display and set output. parameters map needs to include duration struct to set int
+   * planLength and String workoutType
    *
    * @param parameters parameter Map from Dialogflow
    */
-  private void workoutPlan(Map<String, Value> parameters) throws IOException {
-    log.info(String.valueOf(parameters));
+  private void workoutPlanner(Map<String, Value> parameters) throws IOException {
 
+    // Get workoutType from parameter map
+    workoutType = parameters.get("workout-type").getStringValue();
+
+    // Set planLength after getting duration struct from parameter map
     Struct durationStruct = parameters.get("date-time").getStructValue();
     Map<String, Value> durationMap = durationStruct.getFieldsMap();
+
     try {
       Date start = TimeUtils.stringToDate(durationMap.get("startDateTime").getStringValue());
       Date end = TimeUtils.stringToDate(durationMap.get("endDateTime").getStringValue());
@@ -162,10 +242,10 @@ public class WorkoutAgent implements Agent {
         output = "Sorry, unable to make a workout plan for more than 30 days. Please try again.";
       } else {
         // Set output
-        setWorkoutPlanOutput();
+        setWorkoutPlannerOutput();
 
         // Set display
-        setWorkoutPlanDisplay();
+        setWorkoutPlannerDisplay();
       }
     } catch (ParseException e) {
       System.err.println("Unable to parse date format.");
@@ -173,26 +253,29 @@ public class WorkoutAgent implements Agent {
   }
 
   /**
-   * Private setworkoutPLanOutput method, that sets the agent output based on set parameters for
-   * planLength and workoutType from workoutPlan method
+   * Private setworkoutPlannerOutput method, that sets the agent output based on set parameters for
+   * planLength and workoutType from workoutPlanner method
    */
-  private void setWorkoutPlanOutput() {
+  private void setWorkoutPlannerOutput() {
     output = "Here is your " + planLength + " day " + workoutType + " workout plan:";
   }
 
   /**
-   * Private setworkoutPLanDisplay method, that sets the agent display to JSON string by making YT
-   * Data API call from VideoUtils to get passed into workout.js
+   * Private setworkoutPlannerDisplay method, that sets the agent display to JSON string by making
+   * YT Data API call from VideoUtils to get passed into workout.js
    */
-  private void setWorkoutPlanDisplay() throws IOException {
+  private void setWorkoutPlannerDisplay() throws IOException {
 
     // Removing white space so search URL does not have spaces
     workoutType = workoutType.replaceAll("\\s", "");
 
-    // Make API call to WorkoutUtils to get json object of videos
-    List<YouTubeVideo> videoList =
-        VideoUtils.getPlaylistVideoList(planLength, workoutType, "playlist");
-
-    display = "TODO";
+    // Make API call to VideoUtils to get WorkoutPlan object
+    WorkoutPlan workoutPlan =
+        videoUtils.getWorkoutPlan(
+            userService, datastore, maxPlaylistResults, planLength, workoutType, "playlist");
+    if (userService.isUserLoggedIn()) {
+      workoutProfileUtils.storeWorkoutPlan(datastore, workoutPlan);
+    }
+    display = new Gson().toJson(workoutPlan);
   }
 }

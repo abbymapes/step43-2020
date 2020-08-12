@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc.
+ * Copyright 2019 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,8 @@
 
 package com.google.sps.data;
 
-// Imports the Google Cloud client library
-import com.google.api.services.books.*;
-import com.google.api.services.books.model.Volume;
-import com.google.api.services.books.model.Volume.VolumeInfo.IndustryIdentifiers;
+import com.google.api.services.books.v1.model.Volume;
+import com.google.api.services.books.v1.model.Volume.VolumeInfo.IndustryIdentifiers;
 import com.google.gson.*;
 import java.io.IOException;
 import java.io.Serializable;
@@ -30,8 +28,7 @@ import java.util.ArrayList;
  * output display and text for the user
  *
  * <p>A Book object is only created by createBook() function, ensuring that any Book object is only
- * created with valid parameters and that all Book objects have valid title and description
- * properties.
+ * created with valid parameters and that all Book objects havea valid title property.
  */
 public class Book implements Serializable {
 
@@ -47,6 +44,13 @@ public class Book implements Serializable {
   private String isbn;
   private String textSnippet;
   private int order;
+  private String volumeId;
+  private Boolean ebook = false;
+  private Boolean isLiked = false;
+  private ArrayList<Friend> likedBy;
+  private Friend requestedFriend;
+  private int likeCount = 0;
+  private String bookshelfName;
 
   /**
    * Creates a Book object from a valid Volume object that will be used to build virtual assistant
@@ -71,7 +75,7 @@ public class Book implements Serializable {
    * from the Volume object.
    *
    * <p>If Volume object is missing any other properties, the properties will be set to an empty
-   * String or ArrayList<String>
+   * String.
    *
    * @param volume Volume Object
    */
@@ -85,12 +89,99 @@ public class Book implements Serializable {
     setThumbnailLink(volume);
     setBuyLink(volume);
     setEmbeddable(volume);
-    setISBN(volume);
+    setIsbn(volume);
     setTextSnippet(volume);
+    setVolumeId(volume);
+    setEbook(volume);
+    this.likedBy = new ArrayList<Friend>();
+  }
+
+  /**
+   * Public Book constructor, used for testing purposes. The constructor will set the following
+   * fields from the parameters. The rest of the properties will be set to an Empty String.
+   *
+   * @param title String title of book
+   */
+  public Book(String title) {
+    this.title = title;
+    this.authors = "";
+    this.description = "";
+    this.embeddable = false;
+    this.isbn = "";
+    this.publishedDate = "";
+    this.averageRating = "";
+    this.infoLink = "";
+    this.thumbnailLink = "";
+    this.buyLink = "";
+    this.textSnippet = "";
+    this.volumeId = "";
+    this.likedBy = new ArrayList<Friend>();
+  }
+
+  /**
+   * Public Book constructor, used for testing purposes with authors, description, embeddable, and
+   * order fields specified. The rest of the properties will be set to an Empty String.
+   *
+   * @param title String title of book
+   * @param authors String authors of book
+   * @param description String description of book
+   * @param embeddable Bool indicating whether book is embeddable
+   * @param isbn String unique ISBN number
+   * @param order order stored in datastore
+   */
+  public Book(
+      String title,
+      String authors,
+      String description,
+      Boolean embeddable,
+      String isbn,
+      int order) {
+    this(title);
+    this.authors = authors;
+    this.description = description;
+    this.embeddable = embeddable;
+    this.isbn = isbn;
+    this.order = order;
+  }
+
+  /**
+   * Public Book constructor, used for autenticated user testing purposes with volumeId and order
+   * properties specfied. The rest of the properties will be set to an Empty String.
+   *
+   * @param title String title of book
+   * @param volumeId unique volume ID for book within Google Books API
+   * @param order order stored in datastore
+   */
+  public Book(String title, String volumeId, int order) {
+    this(title);
+    this.volumeId = volumeId;
+    this.order = order;
+  }
+
+  /** Two books are considered equal if their unique volumeIds are the same. */
+  @Override
+  public boolean equals(Object object) {
+    if (object == this) {
+      return true;
+    }
+    if (!(object instanceof Book)) {
+      return false;
+    }
+    Book otherBook = (Book) object;
+    return otherBook.getVolumeId().equals(this.volumeId);
+  }
+
+  @Override
+  public int hashCode() {
+    return this.volumeId.hashCode();
   }
 
   public void setOrder(int order) {
     this.order = order;
+  }
+
+  private void setVolumeId(Volume volume) {
+    this.volumeId = volume.getId();
   }
 
   private void setTitle(Volume volume) {
@@ -99,6 +190,12 @@ public class Book implements Serializable {
 
   private void setDescription(Volume volume) {
     this.description = volume.getVolumeInfo().getDescription();
+  }
+
+  private void setEbook(Volume volume) {
+    if (hasValidSaleInfo(volume)) {
+      this.ebook = volume.getSaleInfo().getIsEbook();
+    }
   }
 
   private void setAuthors(Volume volume) {
@@ -165,7 +262,7 @@ public class Book implements Serializable {
     this.embeddable = false;
   }
 
-  private void setISBN(Volume volume) {
+  private void setIsbn(Volume volume) {
     if (volume.getVolumeInfo().getIndustryIdentifiers() != null) {
       ArrayList<IndustryIdentifiers> industryIdentifiers =
           new ArrayList<IndustryIdentifiers>(volume.getVolumeInfo().getIndustryIdentifiers());
@@ -191,6 +288,10 @@ public class Book implements Serializable {
 
   public int getOrder() {
     return this.order;
+  }
+
+  public String getVolumeId() {
+    return this.volumeId;
   }
 
   public String getTitle() {
@@ -229,12 +330,48 @@ public class Book implements Serializable {
     return this.embeddable;
   }
 
-  public String getISBN() {
+  public String getIsbn() {
     return this.isbn;
   }
 
   public String getTextSnippet() {
     return this.textSnippet;
+  }
+
+  public ArrayList<Friend> getLikedBy() {
+    return this.likedBy;
+  }
+
+  public int getLikeCount() {
+    return this.likeCount;
+  }
+
+  public Boolean isEbook() {
+    return this.ebook;
+  }
+
+  public void addToLikedBy(Friend friend) {
+    if (!this.likedBy.contains(friend)) {
+      this.likedBy.add(friend);
+      this.likeCount += 1;
+    }
+  }
+
+  public void setIsLiked(Boolean bool) {
+    this.isLiked = bool;
+  }
+
+  public void setLikedBy(ArrayList<Friend> likedByFriends) {
+    this.likedBy = likedByFriends;
+    this.likeCount = likedByFriends.size();
+  }
+
+  public void setRequestedFriend(Friend friend) {
+    this.requestedFriend = friend;
+  }
+
+  public void setBookshelfName(String bookshelfName) {
+    this.bookshelfName = bookshelfName;
   }
 
   /**

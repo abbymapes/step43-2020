@@ -1,17 +1,32 @@
+/*
+ * Copyright 2019 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.google.sps.agents;
 
-// Imports the Google Cloud client library
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.users.UserService;
-import com.google.gson.Gson;
 import com.google.protobuf.Value;
-import com.google.sps.data.Book;
-import com.google.sps.data.BookQuery;
 import com.google.sps.utils.BookUtils;
-import com.google.sps.utils.BooksMemoryUtils;
+import com.google.sps.utils.BooksAgentHelper;
+import com.google.sps.utils.OAuthHelper;
+import com.google.sps.utils.PeopleUtils;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Books Agent handles user's requests for books from Google Books API. It determines appropriate
@@ -19,31 +34,15 @@ import java.util.Map;
  * intent.
  */
 public class BooksAgent implements Agent {
+  private static Logger log = LoggerFactory.getLogger(BooksAgent.class);
   private final String intentName;
-  private final String userInput;
-  private String output;
-  private String display;
-  private String redirect;
-
-  private int displayNum;
-  private String sessionID;
-  private String queryID;
-  private DatastoreService datastore;
-  private UserService userService;
-
-  private BookQuery query;
-  private ArrayList<Book> bookResults;
-  private int startIndex;
-  private int totalResults;
-  private int resultsReturned;
-  private int prevStartIndex;
-  private int resultsStored;
+  private BooksAgentHelper helper;
 
   /**
    * BooksAgent constructor without queryID sets queryID property to the most recent queryID for the
-   * specified sessionID
+   * specified sessionID.
    *
-   * @param intentName String containing the specific intent within memory agent that user is
+   * @param intentName String containing the specific intent within books agent that user is
    *     requesting.
    * @param userInput String containing user's request input
    * @param parameters Map containing the detected entities in the user's intent.
@@ -63,7 +62,7 @@ public class BooksAgent implements Agent {
   }
 
   /**
-   * BooksAgent constructor with queryID
+   * BooksAgent constructor with queryID.
    *
    * @param intentName String containing the specific intent within memory agent that user is
    *     requesting.
@@ -71,7 +70,7 @@ public class BooksAgent implements Agent {
    * @param parameters Map containing the detected entities in the user's intent.
    * @param sessionID String containing the unique sessionID for user's session
    * @param userService UserService instance to access userID and other user info.
-   * @param datastore DatastoreService instance used to access book info grom database.
+   * @param datastore DatastoreService instance used to access book info from database.
    * @param queryID String containing the unique ID for the BookQuery the user is requesting, If
    *     request comes from Book Display interface, then queryID is retrieved from Book Display
    *     Otherwise, queryID is set to the most recent query that the user (sessionID) made.
@@ -85,209 +84,109 @@ public class BooksAgent implements Agent {
       DatastoreService datastore,
       String queryID)
       throws IOException, IllegalArgumentException {
-    this.displayNum = 5;
-    this.intentName = intentName;
-    this.userInput = userInput;
-    this.sessionID = sessionID;
-    this.userService = userService;
-    this.datastore = datastore;
-    this.queryID = queryID;
-    if (queryID == null) {
-      this.queryID = getMostRecentQueryID(sessionID);
+    this(
+        intentName,
+        userInput,
+        parameters,
+        sessionID,
+        userService,
+        datastore,
+        queryID,
+        null,
+        null,
+        null);
+  }
+
+  /**
+   * BooksAgent constructor for testing purposes, specifying BooksAgentHelper object.
+   *
+   * @param intentName String containing the specific intent within memory agent that user is
+   *     requesting.
+   * @param userInput String containing user's request input
+   * @param parameters Map containing the detected entities in the user's intent.
+   * @param sessionID String containing the unique sessionID for user's session
+   * @param userService UserService instance to access userID and other user info.
+   * @param datastore DatastoreService instance used to access book info from database.
+   * @param queryID String containing the unique ID for the BookQuery the user is requesting, If
+   *     request comes from Book Display interface, then queryID is retrieved from Book Display
+   *     Otherwise, queryID is set to the most recent query that the user (sessionID) made.
+   * @param oauthHelper OAuthHelper instance used to access OAuth methods
+   * @param bookUtils BookUtils instance used to access Google Books API
+   * @param peopleUtils PeopleUtils instance used to access Google People API
+   */
+  public BooksAgent(
+      String intentName,
+      String userInput,
+      Map<String, Value> parameters,
+      String sessionID,
+      UserService userService,
+      DatastoreService datastore,
+      String queryID,
+      OAuthHelper oauthHelper,
+      BookUtils bookUtils,
+      PeopleUtils peopleUtils)
+      throws IOException, IllegalArgumentException {
+    if (oauthHelper == null) {
+      oauthHelper = new OAuthHelper();
     }
+    if (bookUtils == null) {
+      bookUtils = new BookUtils();
+    }
+    if (peopleUtils == null) {
+      peopleUtils = new PeopleUtils();
+    }
+    this.helper =
+        new BooksAgentHelper(
+            intentName,
+            userInput,
+            parameters,
+            sessionID,
+            userService,
+            datastore,
+            queryID,
+            oauthHelper,
+            bookUtils,
+            peopleUtils);
+    this.intentName = intentName;
     setParameters(parameters);
   }
 
-  @Override
+  /**
+   * Method that handles parameter assignment for fulfillment text and display based on the user's
+   * input intent and extracted parameters
+   *
+   * @param parameters Map containing the detected entities in the user's intent.
+   */
   public void setParameters(Map<String, Value> parameters)
       throws IOException, IllegalArgumentException {
-
     // Intents that do not require user to be authenticated
     if (intentName.equals("search")) {
-      this.query = BookQuery.createBookQuery(this.userInput, parameters);
-      this.startIndex = 0;
-
-      // Retrieve books from BookQuery
-      this.bookResults = BookUtils.getRequestedBooks(query, startIndex);
-      this.totalResults = BookUtils.getTotalVolumesFound(query, startIndex);
-      this.resultsReturned = bookResults.size();
-
-      if (resultsReturned > 0) {
-        handleNewQuerySuccess();
-        this.output = "Here's what I found.";
-      } else {
-        this.output = "I couldn't find any results. Can you try again?";
-      }
-
+      helper.handleNewQueryIntents(intentName, parameters);
     } else if (intentName.equals("more")) {
-      // Load BookQuery, totalResults, resultsStored and increment startIndex
-      loadBookQueryInfo(sessionID, queryID);
-      this.startIndex = getNextStartIndex(prevStartIndex, totalResults);
-
-      if (startIndex == -1) {
-        this.output = "I'm sorry, there are no more results.";
-        return;
-      } else if (startIndex + displayNum <= resultsStored) {
-        replaceIndices(sessionID, queryID);
-      } else {
-        // Retrieve books from stored query at startIndex
-        this.bookResults = BookUtils.getRequestedBooks(query, startIndex);
-        int resultsReturned = bookResults.size();
-        int newResultsStored = resultsReturned + resultsStored;
-        this.resultsStored = newResultsStored;
-
-        if (resultsReturned == 0) {
-          this.output = "I'm sorry, there are no more results.";
-          return;
-        } else {
-          // Store Book results and new indices
-          BooksMemoryUtils.storeBooks(bookResults, startIndex, sessionID, queryID, datastore);
-          replaceIndices(sessionID, queryID);
-        }
-      }
-      setBookListDisplay();
-      this.redirect = queryID;
-      this.output = "Here's the next page of results.";
-
+      helper.handleMoreIntent();
     } else if (intentName.equals("previous")) {
-      loadBookQueryInfo(sessionID, queryID);
-      this.startIndex = prevStartIndex - displayNum;
-
-      if (startIndex < -1) {
-        this.output = "This is the first page of results.";
-        startIndex = 0;
-      } else {
-        replaceIndices(sessionID, queryID);
-        this.output = "Here's the previous page of results.";
-      }
-      setBookListDisplay();
-      this.redirect = queryID;
-
+      helper.handlePreviousIntent();
     } else if (intentName.equals("description") || intentName.equals("preview")) {
-      int bookNumber = (int) parameters.get("number").getNumberValue();
-
-      this.prevStartIndex =
-          BooksMemoryUtils.getStoredIndices("startIndex", sessionID, queryID, datastore);
-      Book requestedBook =
-          BooksMemoryUtils.getBookFromOrderNum(
-              bookNumber, prevStartIndex, sessionID, queryID, datastore);
-
-      this.display = bookToString(requestedBook);
-      this.redirect = queryID;
-      this.output = "Here's a " + intentName + " of " + requestedBook.getTitle() + ".";
-
+      helper.handleBookInfoIntents(parameters);
     } else if (intentName.equals("results")) {
-      loadBookQueryInfo(sessionID, queryID);
-      this.startIndex = prevStartIndex;
-      setBookListDisplay();
-      this.output = "Here are the results.";
-      this.redirect = queryID;
+      helper.handleResultsIntent();
+    } else {
+      helper.handleAuthorizationIntents(parameters);
     }
   }
 
   @Override
   public String getOutput() {
-    return this.output;
+    return helper.getOutput();
   }
 
   @Override
   public String getDisplay() {
-    return this.display;
+    return helper.getDisplay();
   }
 
   @Override
   public String getRedirect() {
-    return this.redirect;
-  }
-
-  /**
-   * Upon a successful new book query request, triggered by books.search and books.library intents,
-   * this function does the following:
-   *
-   * <p>Retrieves the next unique queryID, stores BookQuery, Book results, and Indices for the
-   * corresponding sessionID and queryID of the new query. Retrieves the list of books to display.
-   * Sets the display and queryID redirect.
-   */
-  private void handleNewQuerySuccess() {
-    this.queryID = getNextQueryID(sessionID);
-
-    // Store BookQuery, Book results, totalResults, resultsReturned
-    BooksMemoryUtils.storeBooks(bookResults, startIndex, sessionID, queryID, datastore);
-    BooksMemoryUtils.storeBookQuery(query, sessionID, queryID, datastore);
-    BooksMemoryUtils.storeIndices(
-        startIndex, totalResults, resultsReturned, displayNum, sessionID, queryID, datastore);
-
-    setBookListDisplay();
-    this.redirect = queryID;
-  }
-
-  /**
-   * Loads previous BookQuery and Indices information from the BookQuery matching the request's
-   * sessionID and queryID and sets query, prevStartIndex, resultsStored, totalResults based on
-   * stored information
-   *
-   * @param sessionID ID of current user / session
-   * @param queryID ID of query requested
-   */
-  private void loadBookQueryInfo(String sessionID, String queryID) {
-    this.query = BooksMemoryUtils.getStoredBookQuery(sessionID, queryID, datastore);
-    this.prevStartIndex =
-        BooksMemoryUtils.getStoredIndices("startIndex", sessionID, queryID, datastore);
-    this.resultsStored =
-        BooksMemoryUtils.getStoredIndices("resultsStored", sessionID, queryID, datastore);
-    this.totalResults =
-        BooksMemoryUtils.getStoredIndices("totalResults", sessionID, queryID, datastore);
-  }
-
-  /** Sets display to an ArrayList<Book> to display on user interface */
-  private void setBookListDisplay() {
-    ArrayList<Book> booksToDisplay =
-        BooksMemoryUtils.getStoredBooksToDisplay(
-            displayNum, startIndex, sessionID, queryID, datastore);
-    this.display = bookListToString(booksToDisplay);
-  }
-
-  /**
-   * Replaces previous Indices Entity stored in Datastore with the new startIndex, totalResults,
-   * resultsSTored, displayNum for the Indices Entity that matches the current sessionID and queryID
-   * for the request
-   *
-   * @param sessionID ID of current user / session
-   * @param queryID ID of query requested
-   */
-  private void replaceIndices(String sessionID, String queryID) {
-    BooksMemoryUtils.deleteStoredEntities("Indices", sessionID, queryID, datastore);
-    BooksMemoryUtils.storeIndices(
-        startIndex, totalResults, resultsStored, displayNum, sessionID, queryID, datastore);
-  }
-
-  private int getNextStartIndex(int prevIndex, int total) {
-    int nextIndex = prevIndex + displayNum;
-    if (nextIndex < total) {
-      return nextIndex;
-    }
-    return -1;
-  }
-
-  private String bookToString(Book book) {
-    Gson gson = new Gson();
-    return gson.toJson(book);
-  }
-
-  private String bookListToString(ArrayList<Book> books) {
-    Gson gson = new Gson();
-    return gson.toJson(books);
-  }
-
-  private String getMostRecentQueryID(String sessionID) {
-    int queryNum = BooksMemoryUtils.getNumQueryStored(sessionID, datastore);
-    String queryID = "query-" + Integer.toString(queryNum);
-    return queryID;
-  }
-
-  private String getNextQueryID(String sessionID) {
-    int queryNum = BooksMemoryUtils.getNumQueryStored(sessionID, datastore) + 1;
-    String queryID = "query-" + Integer.toString(queryNum);
-    return queryID;
+    return helper.getRedirect();
   }
 }

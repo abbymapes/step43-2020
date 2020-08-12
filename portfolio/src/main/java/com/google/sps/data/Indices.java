@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Google Inc.
+ * Copyright 2019 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,6 @@
 
 package com.google.sps.data;
 
-// Imports the Google Cloud client library
 import com.google.api.services.books.*;
 import com.google.gson.*;
 
@@ -27,7 +26,8 @@ import com.google.gson.*;
  * and display number, and total pages of results based on display number output display and text
  * for the user.
  *
- * <p>An Indices object is created to pass information about indices to front-end via BookServlet
+ * <p>An Indices object is created to pass information about indices to front-end via
+ * BookIndicesServlet.
  */
 public class Indices {
   private int startIndex;
@@ -39,14 +39,14 @@ public class Indices {
   private boolean hasPrev;
   private boolean hasMore;
 
-  /** Indices constructor initializes properties */
+  /** Indices constructor initializes properties. */
   public Indices(int startIndex, int resultsStored, int totalResults, int displayNum) {
     this.startIndex = startIndex;
     this.resultsStored = resultsStored;
     this.totalResults = totalResults;
     this.displayNum = displayNum;
     this.currentPage = startIndex / displayNum + 1;
-    this.totalPages = totalResults / displayNum;
+    this.totalPages = getTotalPages(totalResults, displayNum);
     setHasPrev();
     setHasMore();
   }
@@ -85,5 +85,9 @@ public class Indices {
 
   public boolean getHasPrev() {
     return this.hasPrev;
+  }
+
+  private int getTotalPages(int totalResults, int displayNum) {
+    return (int) Math.ceil((double) totalResults / displayNum);
   }
 }
